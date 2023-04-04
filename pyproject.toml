@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "my-apple-watch"
+version = "0.1.0"
+description = ""
+authors = ["Anas Suffo <anassaffo@gmail.com>"]
+readme = "README.md"
+packages = [{include = "my_apple_watch"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.0.0"
+xmltodict = "^0.13.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
