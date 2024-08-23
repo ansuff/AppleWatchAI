@@ -12,7 +12,9 @@ pandas = "^2.0.0"
 xmltodict = "^0.13.0"
 boto3 = "^1.28.22"
 matplotlib = "^3.7.2"
-
+duckdb = "^1.0.0"
+pre-commit = "^2.20.0"
+ruff = "^0.0.282"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.25.1"
