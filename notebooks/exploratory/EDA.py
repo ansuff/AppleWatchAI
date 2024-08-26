@@ -58,9 +58,9 @@ db_path = '../../data/health_data.duckdb'
 con = duckdb.connect(db_path)
 
 # Dump the dataframes into the DuckDB database
-con.execute("CREATE TABLE records AS SELECT * FROM df_records")
-con.execute("CREATE TABLE workouts AS SELECT * FROM df_workouts_flat")
-con.execute("CREATE TABLE activities AS SELECT * FROM df_activities")
+con.execute("CREATE TABLE IF NOT EXISTS records AS SELECT * FROM df_records")
+con.execute("CREATE TABLE IF NOT EXISTS workouts AS SELECT * FROM df_workouts_flat")
+con.execute("CREATE TABLE IF NOT EXISTS activities AS SELECT * FROM df_activities")
 
 # Close the connection
 con.close()
