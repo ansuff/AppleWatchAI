@@ -1,24 +1,40 @@
 [tool.poetry]
-name = "my-apple-watch"
-version = "0.1.0"
+name = "AppleWatchAI"
+version = "0.0.0"
 description = ""
 authors = ["Anas Suffo <anassaffo@gmail.com>"]
+repository = "https://github.com/ansuff/AppleWatchAI"
 readme = "README.md"
-packages = [{include = "my_apple_watch"}]
+packages = [{include = "awai", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pandas = "^2.0.0"
-xmltodict = "^0.13.0"
-boto3 = "^1.28.22"
-matplotlib = "^3.7.2"
-duckdb = "^1.0.0"
-pre-commit = "^2.20.0"
-ruff = "^0.0.282"
+pandera = "*"
+pydantic = "*"
+fire = "*"
+dynaconf = "*"
+pandas = "*"
+xmltodict = "*"
+boto3 = "*"
+duckdb = "*"
+loguru = "*"
+
+[tool.poetry.group.testing.dependencies]
+pytest = "*"
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.25.1"
+ipykernel = "*"
+jupytext = "*"
+pre-commit = "*"
+plotly = "*"
+pytest-xdist = "*"
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
+
+[tool.ruff.lint]
+extend-select = ["I"]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core==1.8.2"]
 build-backend = "poetry.core.masonry.api"
