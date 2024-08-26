@@ -18,12 +18,10 @@
 # %%
 import pandas as pd
 import xmltodict
-import os
-import boto3
 import xmltodict
 import pandas as pd
-import matplotlib.pyplot as plt
 import duckdb
+import plotly.express as px
 
 from pathlib import Path
 
@@ -31,10 +29,11 @@ from pathlib import Path
 # ## Data
 
 # %%
-input_path = Path('../../data/apple_health_export_20240823/export.xml')
+input_path = Path('../../data/export.xml')
 with open(input_path, 'r') as xml_file:
     input_data = xmltodict.parse(xml_file.read())
 
+# %%
 #Records list for general health data & imported as Pandas Data Frame
 records_list = input_data['HealthData']['Record']
 df_records = pd.DataFrame(records_list)
@@ -42,6 +41,7 @@ df_records = pd.DataFrame(records_list)
 #Workout list for workout data
 workouts_list = input_data['HealthData']['Workout']
 df_workouts = pd.DataFrame(workouts_list)
+df_workouts_flat = pd.json_normalize(df_workouts.to_dict(orient='records'))
 
 #activity summary list for workout data
 activity_list = input_data['HealthData']['ActivitySummary']
@@ -59,7 +59,7 @@ con = duckdb.connect(db_path)
 
 # Dump the dataframes into the DuckDB database
 con.execute("CREATE TABLE records AS SELECT * FROM df_records")
-con.execute("CREATE TABLE workouts AS SELECT * FROM df_workouts")
+con.execute("CREATE TABLE workouts AS SELECT * FROM df_workouts_flat")
 con.execute("CREATE TABLE activities AS SELECT * FROM df_activities")
 
 # Close the connection
