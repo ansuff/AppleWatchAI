@@ -39,3 +39,7 @@ venv.bak/
 
 # ignore __pycache__ directory
 __pycache__/
+
+# npm
+package-lock.json
+package.json
