@@ -1,5 +1,21 @@
+default_language_version:
+  python: python3
+files: '^src/.*\.pyi$|^tests/.\.pyi?$'
+fail_fast: true
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-xml
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.282
+    # get the latest version
+    rev: v0.6.2
     hooks:
       - id: ruff
+        args: [--fix]
+      - id: ruff-format
