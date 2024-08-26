@@ -1,22 +1,14 @@
 # Notebooks
 
-For this project, we sometimes use Jupyter (`.ipynb`) notebooks to explore data and experiment with code. The notebooks are stored in the `notebooks` directory.
+For this project, sometimes Jupyter (`.ipynb`) notebooks are used to explore data and experiment with code. The notebooks are stored in the `notebooks` directory.
 
-Some points to note about the notebooks:
-
-* The notebooks are **not** part of the main application and are not intended to be run as part of any of the scheduled pipelines of the project.
-
-* The notebooks are **not** guaranteed to be up-to-date or to work with the latest version of the code. They are provided as a convenience for developers for experimentation and exploration.
-
-* The `.py` representation of notebooks however are version controlled. More information about versioning can be found in the [Versioning](#versioning) section.
+* The `.py` representation of notebooks are version controlled. More information about versioning can be found in the [Versioning](#versioning) section.
 
 ## Versioning
 
-For this project we are using Azure Repos as the VCS platform and at the time of writing this doc Azure Repos does not support a clean way of versioning of `.ipynb` files and hence in PRs git treats them as huge JSON blobs which are not at all developer friendly
- especially when there are merge conflicts.
+There is no clear versioning of `.ipynb` files and hence in PRs git treats them as huge JSON blobs which is not developer friendly.
 
-To avoid this, we have decided to use a 3rd party `pip` package called [`jupytext`](https://jupytext.readthedocs.io/en/latest), which helps us export and pair all the `.ipynb` files with `.py` files, in conjunction with [VSCode Tasks](https://code.visualstudio.com/docs/editor/tasks#_custom-tasks).
- This way we can version control the `.py` files and the `.ipynb` files can be ignored and generated on the fly.
+To avoid this, [`jupytext`](https://jupytext.readthedocs.io/en/latest) is used in export and pair all the `.ipynb` files with `.py` files, in conjunction with [VSCode Tasks](https://code.visualstudio.com/docs/editor/tasks#_custom-tasks). Now the notebooks are version controlled as `.py` files and `.ipynb` files are ignored in the `.gitignore` file.
 
 ## Workflow 
 
