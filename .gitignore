@@ -4,9 +4,6 @@ node_modules/
 # Ignore log files
 *.log
 
-# Ignore environment variable files
-.env
-
 # Ignore data directory
 data/
 
