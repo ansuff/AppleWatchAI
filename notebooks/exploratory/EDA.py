@@ -22,8 +22,21 @@ import xmltodict
 import pandas as pd
 import duckdb
 import plotly.express as px
+import re
 
 from pathlib import Path
+
+
+# %% [markdown]
+# ## Utils
+
+# %%
+def camel_to_snake(name):
+    # Remove the '@' and convert camelCase to snake_case
+    name = re.sub('@', '', name)  # Remove '@' symbol
+    name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()  # Convert camelCase to snake_case
+    return name
+
 
 # %% [markdown]
 # ## Data
@@ -34,21 +47,25 @@ with open(input_path, 'r') as xml_file:
     input_data = xmltodict.parse(xml_file.read())
 
 # %%
-#Records list for general health data & imported as Pandas Data Frame
+#Records list for general health data 
 records_list = input_data['HealthData']['Record']
-df_records = pd.DataFrame(records_list)
+records_df = pd.DataFrame(records_list)
 
 #Workout list for workout data
 workouts_list = input_data['HealthData']['Workout']
-df_workouts = pd.DataFrame(workouts_list)
-df_workouts_flat = pd.json_normalize(df_workouts.to_dict(orient='records'))
+workout_df = pd.DataFrame(workouts_list)
+workout_df_flat = pd.json_normalize(workout_df.to_dict(orient='records'))
 
 #activity summary list for workout data
 activity_list = input_data['HealthData']['ActivitySummary']
-df_activities = pd.DataFrame(activity_list)
+activity_df = pd.DataFrame(activity_list)
 
 # %% [markdown]
-# dumb the data into duckdb
+# I like working with `duckdb` because it's fast and easy to use. I'll use it in the cli in addition to pandas in the notebook.
+#
+# Let's now create a `duckdb` database and load the data into it.
+#
+# Note: the workout data needed to be flattened because it included nested data.
 
 # %%
 # Define the path to the DuckDB database
@@ -58,94 +75,45 @@ db_path = '../../data/health_data.duckdb'
 con = duckdb.connect(db_path)
 
 # Dump the dataframes into the DuckDB database
-con.execute("CREATE TABLE IF NOT EXISTS records AS SELECT * FROM df_records")
-con.execute("CREATE TABLE IF NOT EXISTS workouts AS SELECT * FROM df_workouts_flat")
-con.execute("CREATE TABLE IF NOT EXISTS activities AS SELECT * FROM df_activities")
+con.execute("CREATE TABLE IF NOT EXISTS records AS SELECT * FROM records_df")
+con.execute("CREATE TABLE IF NOT EXISTS workouts AS SELECT * FROM workout_df_flat")
+con.execute("CREATE TABLE IF NOT EXISTS activities AS SELECT * FROM activity_df")
 
 # Close the connection
 con.close()
 
-# %%
-df_records.tail()
+# %% [markdown]
+# # EDA
+
+# %% [markdown]
+# ## Records
 
 # %%
-df_records['@type'].value_counts()
+records_df.info()
+display(records_df["@type"].value_counts()) 
+
+# %% [markdown]
+# Apple provides way more than what I initially wanted which is great! this will be a fun dataset to work with. However, many of these physical activities are not what I consistently do, so I'll filter them out.
+#
+# I have around `3 million` records to work with, which is a great amount as I tried to be accurate in my records the past few years (since I got my first Apple Watch).
+
+# %% [markdown]
+# Let's rename some of the columns
 
 # %%
-df_workouts.tail()
+# Applying the camel_to_snake function to rename all columns
+records_df.columns = [camel_to_snake(col) for col in records_df.columns]
+# Display the renamed columns
+print(records_df.columns)
 
 # %%
-df_workouts.WorkoutStatistics.value_counts()
+# return recorded Active Energy Burned
+records_df.loc[(records_df['type'].str.contains("ActiveEnergyBurned"))]
+
+# %% [markdown]
+# From just looking into the calories burned, some aggregations are needed to get more meaningful insights.
+
+# %% [markdown]
+# ### Data Cleaning
 
 # %%
-df_activities.tail()
-
-# %%
-# Convert date to datetime
-df_activities['@dateComponents'] = pd.to_datetime(df_activities['@dateComponents'])
-# Convert activeEnergyBurned to numeric
-df_activities["@activeEnergyBurned"] = df_activities["@activeEnergyBurned"].apply(pd.to_numeric)
-
-# %%
-df_activities = df_activities.loc[(df_activities['@activeEnergyBurned'] != 0)]
-plt.bar(df_activities['@dateComponents'], df_activities['@activeEnergyBurned'])
-plt.xlabel('Date')
-plt.ylabel('Active Energy Burned')
-plt.title('Active Energy Burned by Date')
-
-plt.show()
-
-# %%
-# create a figure and axis
-fig, ax = plt.subplots()
-
-# plot the data
-ax.plot(df_activities['@dateComponents'], df_activities['@activeEnergyBurned'])
-
-# set the x-axis label
-ax.set_xlabel('Date')
-
-# set the y-axis label
-ax.set_ylabel('Energy Burned')
-
-# set the title
-ax.set_title('Energy Burned Every Day Since 2022')
-
-# rotate the x-axis labels
-plt.xticks(rotation=45)
-
-# show the plot
-plt.show()
-
-# %%
-df_workouts['@workoutActivityType'].unique()
-
-# %%
-import re
-
-# %%
-# remove HKWorkoutActivityType from workoutActivityType
-df_workouts['@workoutActivityType'] = df_workouts['@workoutActivityType'].str.replace('HKWorkoutActivityType', '')
-
-# %%
-# create a figure and axis
-fig, ax = plt.subplots()
-# convert duration to numeric
-df_workouts["@duration"] = df_workouts["@duration"].apply(pd.to_numeric)
-# plot the data
-ax.bar(df_workouts['@workoutActivityType'], df_workouts['@duration'])
-
-# set the x-axis label
-ax.set_xlabel('Activity Type')
-
-# set the y-axis label
-ax.set_ylabel('Duration (mins)')
-
-# set the title
-ax.set_title('Duration of Activities Since 2022')
-
-# rotate the x-axis labels
-plt.xticks(rotation=90)
-
-# show the plot
-plt.show()
