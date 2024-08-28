@@ -148,9 +148,46 @@ records_df_selected = records_df.drop(columns=columns_to_drop)
 records_df_selected.tail()
 
 # %% [markdown]
-# `heart_rate_variability_metadata_list` contains a dict, needs to flatened
+# `heart_rate_variability_metadata_list` contains a dict, needs to flattened
 
 # %%
 pd.json_normalize(records_df_selected.to_dict(orient='records'))
+
+# %% [markdown]
+# The `heart_rate_variability_metadata_list` column includes instantaneous heart rate variability data, which is not of an interest of mine given the inclusion of heart rate averages in the dataset. I will drop this column. Although, will keep an eye on it for future analysis.
+
+# %%
+records_df_selected = records_df_selected.drop(columns="heart_rate_variability_metadata_list")
+
+# %%
+# transform 'startDate' into date format 
+records_df_cleaned = records_df_selected.copy()
+records_df_cleaned['Day'] = records_df_selected['start_date'].dt.strftime('%A')
+records_df_cleaned['Date'] = records_df_selected['start_date'].dt.strftime('%Y-%m-%d')
+records_df_cleaned['Month'] = records_df_selected['start_date'].dt.strftime('%B')
+# value is numeric, NaN if fails
+records_df_cleaned['value'] = pd.to_numeric(records_df_selected['value'], errors='coerce')
+# some records do not measure anything, just count occurrences
+# filling with 1.0 (= one time) makes it easier to aggregate
+records_df_cleaned['value'] = records_df_cleaned['value'].fillna(1.0)
+
+# shorter observation names
+records_df_cleaned['type'] = records_df_cleaned['type'].str.replace('HKQuantityTypeIdentifier', '')
+records_df_cleaned['type'] = records_df_cleaned['type'].str.replace('HKCategoryTypeIdentifier', '')
+
+# reorder columns
+records_df_cleaned = records_df_cleaned[['type', 'Date','Day', 'Month','value','unit', 'duration']]
+
+# %%
+records_df_cleaned.sample(5)
+
+# %%
+records_df_cleaned.loc[records_df_cleaned.duration==pd.Timedelta('0 days 00:00:00')]
+
+# %%
+display(records_df_cleaned["type"].value_counts()) 
+
+# %% [markdown]
+# I only need some of these record types that Apple provides, so will select only relevant ones.....
 
 # %%
