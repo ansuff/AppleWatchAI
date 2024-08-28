@@ -26,6 +26,14 @@ import re
 
 from pathlib import Path
 
+# %% [markdown]
+# Define the globals
+
+# %%
+RAW_DATA_DIR = Path("../../data")
+XML_FILE_NAME = "export.xml"
+DUCKDB_DB_NAME = "health_data.duckdb"
+
 
 # %% [markdown]
 # ## Utils
@@ -41,45 +49,43 @@ def camel_to_snake(name):
 # %% [markdown]
 # ## Data
 
-# %%
-input_path = Path('../../data/export.xml')
-with open(input_path, 'r') as xml_file:
-    input_data = xmltodict.parse(xml_file.read())
-
-# %%
-#Records list for general health data 
-records_list = input_data['HealthData']['Record']
-records_df = pd.DataFrame(records_list)
-
-#Workout list for workout data
-workouts_list = input_data['HealthData']['Workout']
-workout_df = pd.DataFrame(workouts_list)
-workout_df_flat = pd.json_normalize(workout_df.to_dict(orient='records'))
-
-#activity summary list for workout data
-activity_list = input_data['HealthData']['ActivitySummary']
-activity_df = pd.DataFrame(activity_list)
-
 # %% [markdown]
 # I like working with `duckdb` because it's fast and easy to use. I'll use it in the cli in addition to pandas in the notebook.
 #
-# Let's now create a `duckdb` database and load the data into it.
+# Let's now create a `duckdb` database and load the data into it if it does not exist.
 #
 # Note: the workout data needed to be flattened because it included nested data.
 
 # %%
-# Define the path to the DuckDB database
-db_path = '../../data/health_data.duckdb'
+con = duckdb.connect(f"{RAW_DATA_DIR}/{DUCKDB_DB_NAME}")
+# Check if the tables already exist
+tables_exist = con.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name IN ('records', 'workouts', 'activities')").fetchone()[0] >= 3
+if not tables_exist:
+    input_path = Path('../../data/export.xml')
+    with open(input_path, 'r') as xml_file:
+        input_data = xmltodict.parse(xml_file.read())
 
-# Connect to the DuckDB database (it will be created if it doesn't exist)
-con = duckdb.connect(db_path)
+    #Records list for general health data 
+    records_list = input_data['HealthData']['Record']
+    records_df = pd.DataFrame(records_list)
 
-# Dump the dataframes into the DuckDB database
-con.execute("CREATE TABLE IF NOT EXISTS records AS SELECT * FROM records_df")
-con.execute("CREATE TABLE IF NOT EXISTS workouts AS SELECT * FROM workout_df_flat")
-con.execute("CREATE TABLE IF NOT EXISTS activities AS SELECT * FROM activity_df")
+    #Workout list for workout data
+    workouts_list = input_data['HealthData']['Workout']
+    workout_df = pd.DataFrame(workouts_list)
+    workout_df_flat = pd.json_normalize(workout_df.to_dict(orient='records'))
 
-# Close the connection
+    #activity summary list for workout data
+    activity_list = input_data['HealthData']['ActivitySummary']
+    activity_df = pd.DataFrame(activity_list)
+    
+    # Dump the dataframes into the DuckDB database
+    con.execute("CREATE TABLE IF NOT EXISTS records AS SELECT * FROM records_df")
+    con.execute("CREATE TABLE IF NOT EXISTS workouts AS SELECT * FROM workout_df_flat")
+    con.execute("CREATE TABLE IF NOT EXISTS activities AS SELECT * FROM activity_df")
+else:
+    records_df = con.query("SELECT * FROM records").to_df()
+    workout_df_flat = con.query("SELECT * FROM workouts").to_df()
+    activity_df = con.query("SELECT * FROM activities").to_df()
 con.close()
 
 # %% [markdown]
@@ -90,6 +96,11 @@ con.close()
 
 # %%
 records_df.info()
+
+# %% [markdown]
+# so records requires `~250 MB` in the memory, which is fine for now, I will eventually be using duckdb for the streamlined code.
+
+# %%
 display(records_df["@type"].value_counts()) 
 
 # %% [markdown]
@@ -112,8 +123,34 @@ records_df.loc[(records_df['type'].str.contains("ActiveEnergyBurned"))]
 
 # %% [markdown]
 # From just looking into the calories burned, some aggregations are needed to get more meaningful insights.
+#
+# We have three date columns: `start_date`, `end_date` and `creation_date`. No need to keep the `creation_date` column (when did I add the record to the database). I will calculate duration from `start_date` and `end_date`, and keep the `start_date` column only.
 
 # %% [markdown]
 # ### Data Cleaning
+
+# %% [markdown]
+# First we convert the date columns to datetime objects.
+#
+# Then we calculate the duration of each record.
+
+# %%
+date_columns = ['start_date', 'end_date']
+for col in date_columns:
+    records_df[col] = pd.to_datetime(records_df[col])
+records_df['duration'] = records_df['end_date'] - records_df['start_date']
+
+# %%
+columns_to_drop = ['source_name', 'source_version', 'device', 'creation_date', 'source_version', 'metadata_entry','end_date']
+records_df_selected = records_df.drop(columns=columns_to_drop)
+
+# %%
+records_df_selected.tail()
+
+# %% [markdown]
+# `heart_rate_variability_metadata_list` contains a dict, needs to flatened
+
+# %%
+pd.json_normalize(records_df_selected.to_dict(orient='records'))
 
 # %%
