@@ -184,6 +184,9 @@ records_df_cleaned.sample(5)
 # %%
 records_df_cleaned.loc[records_df_cleaned.duration==pd.Timedelta('0 days 00:00:00')]
 
+# %% [markdown]
+# So we have quite a lot of activity types that do not have a duration, they just measure speed, bmi, etc. I will see if I will be needing them later.
+
 # %%
 display(records_df_cleaned["type"].value_counts()) 
 
