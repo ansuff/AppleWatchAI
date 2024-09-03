@@ -22,6 +22,7 @@ import xmltodict
 import pandas as pd
 import duckdb
 import plotly.express as px
+import plotly.graph_objects as go
 import re
 
 from pathlib import Path
@@ -251,13 +252,11 @@ for key in key_get_sum:
 # ### Ploting
 
 # %%
-fig = px.line(
-    records_df_dict_daily['DistanceCycling'], 
-    x='Date', 
-    y='DistanceCycling', 
-    title='Distance Cycling',
-    labels={'DistanceCycling':'Distance Cycling (m)'}
-)
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=records_df_dict_daily['DistanceCycling']['Date'], y=records_df_dict_daily['DistanceCycling']['DistanceCycling'], mode='lines', name='Cycling'))
+fig.add_trace(go.Scatter(x=records_df_dict_daily['ActiveEnergyBurned']['Date'], y=records_df_dict_daily['ActiveEnergyBurned']['ActiveEnergyBurned'], mode='lines', name='Energy', yaxis='y2'))
+
+fig.update_layout(title='Daily Distance Cycling and Active Energy Burned', xaxis_title='Date', yaxis_title='Distance Cycling (m)', yaxis2=dict(overlaying='y', side='right'))
 fig.show()
 
 # %%
