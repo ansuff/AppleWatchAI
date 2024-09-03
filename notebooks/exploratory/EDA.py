@@ -190,7 +190,74 @@ records_df_cleaned.loc[records_df_cleaned.duration==pd.Timedelta('0 days 00:00:0
 # %%
 display(records_df_cleaned["type"].value_counts()) 
 
+# %%
+records_df_cleaned.loc[records_df_cleaned['type'].str.contains("SleepAnalysis")]
+
 # %% [markdown]
 # I only need some of these record types that Apple provides, so will select only relevant ones.....
+
+# %%
+# dictionary of DataFrames for filtered 'records_df'
+records_df_dict = {}
+# filter 'type' of 'records'
+record_types = [
+   'BodyMass',
+   'ActiveEnergyBurned',
+   'BasalEnergyBurned',
+   'DistanceWalkingRunning',
+   'StepCount',
+   'AppleStandTime',
+   'WalkingSpeed',
+   'DistanceCycling',
+   'HeartRateVariabilitySDNN',
+   'RestingHeartRate',
+   'WalkingHeartRateAverage',
+   'VO2Max',
+   'HeartRateRecoveryOneMinute',
+   'PhysicalEffort',
+   'SleepAnalysis'
+   ]
+# create new DataFrame for every interested data
+for record_type in record_types:
+   records_df_dict[record_type] = records_df_cleaned.loc[(records_df_cleaned['type'].str.contains(record_type))].rename(columns={"value":record_type}).sort_values(by='Date')
+
+# %% [markdown]
+# Now aggregating the daily values
+
+# %%
+# list of data 'type' that need to be summed daily
+key_get_sum = [
+    'BasalEnergyBurned', 
+    'ActiveEnergyBurned',
+    'DistanceWalkingRunning',
+    'StepCount',
+    'AppleStandTime',
+    'DistanceCycling',
+    'PhysicalEffort',
+    ]
+records_df_dict_daily = {}
+for key in key_get_sum:
+    records_df_dict_daily[key] = records_df_dict[key].groupby(records_df_dict[key]['Date']).agg({key: 'sum', 'Day': lambda x: x.mode().iat[0]}).reset_index()
+
+# %% [markdown]
+# Including also monthly aggregations
+
+# %%
+records_df_dict_monthly = {}
+for key in key_get_sum:
+    records_df_dict_monthly[key] = records_df_dict[key].groupby(records_df_dict[key]['Date'].str[:-3]).agg({key: 'sum', 'Month': lambda x: x.mode().iat[0]}).reset_index()
+
+# %% [markdown]
+# ### Ploting
+
+# %%
+fig = px.line(
+    records_df_dict_daily['DistanceCycling'], 
+    x='Date', 
+    y='DistanceCycling', 
+    title='Distance Cycling',
+    labels={'DistanceCycling':'Distance Cycling (m)'}
+)
+fig.show()
 
 # %%
