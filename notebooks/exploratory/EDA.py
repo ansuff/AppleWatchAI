@@ -192,7 +192,10 @@ records_df_cleaned.loc[records_df_cleaned.duration==pd.Timedelta('0 days 00:00:0
 display(records_df_cleaned["type"].value_counts()) 
 
 # %%
-records_df_cleaned.loc[records_df_cleaned['type'].str.contains("SleepAnalysis")]
+records_df_cleaned.loc[records_df_cleaned['type'].str.contains("DistanceWalkingRunning")]
+
+# %% [markdown]
+# It's worth noting that `PhysiscalEffort` is a new feature Apple added and it's from August 2023. It measures the kcal/hr.kg so the energy burned per hour per kg of body weight.
 
 # %% [markdown]
 # I only need some of these record types that Apple provides, so will select only relevant ones.....
@@ -252,11 +255,26 @@ for key in key_get_sum:
 # ### Ploting
 
 # %%
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=records_df_dict_daily['DistanceCycling']['Date'], y=records_df_dict_daily['DistanceCycling']['DistanceCycling'], mode='lines', name='Cycling'))
-fig.add_trace(go.Scatter(x=records_df_dict_daily['ActiveEnergyBurned']['Date'], y=records_df_dict_daily['ActiveEnergyBurned']['ActiveEnergyBurned'], mode='lines', name='Energy', yaxis='y2'))
+cycling_unit = records_df_cleaned.loc[records_df_cleaned['type'].str.contains("DistanceCycling")]['unit'].iat[0]
+walking_unit = records_df_cleaned.loc[records_df_cleaned['type'].str.contains("DistanceWalkingRunning")]['unit'].iat[0]
+burned_energy_unit = records_df_cleaned.loc[records_df_cleaned['type'].str.contains("ActiveEnergyBurned")]['unit'].iat[0]
+physical_effort_unit = records_df_cleaned.loc[records_df_cleaned['type'].str.contains("PhysicalEffort")]['unit'].iat[0]
 
-fig.update_layout(title='Daily Distance Cycling and Active Energy Burned', xaxis_title='Date', yaxis_title='Distance Cycling (m)', yaxis2=dict(overlaying='y', side='right'))
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=records_df_dict_daily['DistanceCycling']['Date'], y=records_df_dict_daily['DistanceCycling']['DistanceCycling'], mode='lines', name=f"Cycling ({cycling_unit})"))
+fig.add_trace(go.Scatter(x=records_df_dict_daily['DistanceWalkingRunning']['Date'], y=records_df_dict_daily['DistanceWalkingRunning']['DistanceWalkingRunning'], mode='lines', name=f"Walking/Running ({walking_unit})"))
+fig.add_trace(go.Scatter(x=records_df_dict_daily['ActiveEnergyBurned']['Date'], y=records_df_dict_daily['ActiveEnergyBurned']['ActiveEnergyBurned'], mode='lines', name=f"Energy Burned ({burned_energy_unit})", yaxis='y2'))
+fig.add_trace(go.Scatter(x=records_df_dict_daily['PhysicalEffort']['Date'], y=records_df_dict_daily['PhysicalEffort']['PhysicalEffort'], mode='lines', name=f"Physical Effort ({physical_effort_unit})", yaxis='y2'))
+
+fig.update_layout(title='Daily Distance Cycling and Active Energy Burned', xaxis_title='Date', yaxis_title='Distance Cycling', yaxis2=dict(overlaying='y', side='right'))
 fig.show()
 
-# %%
+# %% [markdown]
+# Using `plotly` I was able to zoom into the regions I was interested in and highlight whatever feature I wanted to see. I was able to come up with these points:
+# - Walking/ Running does have an effect on the amount of energy burned but the effect is not that big, I saw that even some days I would be walking more than 10km and still did not get as much calories burned as I would've cycling or weight lifting
+# - Cycling is a better indicator of higher energy burned
+# - There might be some outliers where it seems I walked for more than 30km or 50km, I need to check my calender to confirm this
+# - Physical effort is a nice feature that is specific to me, I think it would be a nice alternative to the base energy burned in an ML sense
+
+# %% [markdown]
+#
